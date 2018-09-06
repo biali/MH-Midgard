@@ -1,0 +1,18 @@
+// Quest Database
+//
+// Structure of Database:
+// Quest ID,Time Limit,Target1,Val1,Target2,Val2,Target3,Val3,MobID1,NameID1,Rate1,MobID2,NameID2,Rate2,MobID3,NameID3,Rate3,Quest Title
+//
+// The MobID*, NameID*, and Rate* reflect special values for quests that can drop an item at given rate from given mob.
+// If no MobID* is given, then any mob has a chance to drop the given ItemID*.
+
+//Assignments
+99999,3600,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,Home Sweet Home
+100000,3000,1717,7,0,0,0,0,0,0,0,0,0,0,0,0,0,Ferus of Payon
+100001,3000,1119,5,1380,3,0,0,0,0,0,0,0,0,0,0,0,A Driller Kerfuffle
+100002,3000,1714,1,0,0,0,0,0,0,0,0,0,0,0,0,0,The Great Ferus Hunt
+//Optionals
+100030,3000,1119,7,1380,5,0,0,0,0,0,0,0,0,0,0,0,Butting Heads with Nature
+100031,3000,1717,7,0,0,0,0,0,0,0,0,0,0,0,0,0,A Thicket of Thugs
+
+

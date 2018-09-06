@@ -561,7 +561,7 @@
 16005,499,100	// Eden Mace II
 
 // * Third Job-related
-1703,507,100	// Bow
+//Biali 1703,507,100	// Bow
 2794,507,100	// Magic Stone Ring
 2795,499,100	// Green Apple Ring
 2796,507,100	// Rocks

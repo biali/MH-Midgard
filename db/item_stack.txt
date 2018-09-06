@@ -30,3 +30,13 @@
 
 // Arch Bishop
 12333,3,1  // Ancilla
+
+//Ragnamania
+//Arrows
+1764,100,1 //Sharp Arrow (Power)
+1752,100,1 //Fire Arrow (Blast)
+1768,100,1 //Sleep Arrow (Sleep)
+1758,100,1 //Stun Arroow (Paralysis)
+1763,100,1 //Poison Arros (Poison) 
+503,10,1 // Yellow Potion
+504,10,1 // White Potion
