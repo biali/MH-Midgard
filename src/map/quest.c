@@ -423,6 +423,12 @@ int quest_read_db(void)
 				memcpy(quest, &entry, sizeof(entry));
 				idb_put(questdb, quest->id, quest);
 			}
+
+			//Biali
+			quest = (struct quest_db *)idb_get(questdb, quest_id);
+			safestrncpy(quest->name, trim(str[17]), sizeof(quest->name));
+	 		//	ShowWarning("str17 %s and quest_name %s.\n",str[17],quest->name);
+
 			count++;
 		}
 

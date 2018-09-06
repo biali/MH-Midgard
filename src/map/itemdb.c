@@ -419,6 +419,27 @@ bool itemdb_isequip2(struct item_data *id) {
 	}
 }
 
+/** Checks if item is Weapon or Not
+* @param id Item data
+* @return True if item is equip, false otherwise
+* Biali
+*/
+bool itemdb_isweapon(struct map_session_data *sd, int n) {
+
+	struct item_data *id;
+	nullpo_retr(ITEM_EQUIP_ACK_FAIL, sd);
+	id = sd->inventory_data[n];
+
+	nullpo_ret(id);
+	switch (id->type) {
+		case IT_WEAPON:
+			return true;
+		default:
+			return false;
+	} 
+}
+
+
 /** Checks if item is stackable or not
 * @param id Item data
 * @return True if item is stackable, false otherwise
@@ -701,6 +722,43 @@ static void itemdb_read_itemgroup(const char* basedir, bool silent) {
 	itemdb_read_itemgroup_sub(filepath, silent);
 	return;
 }
+
+
+/*==========================================
+ * [Biali] DB de Sharpness dos Equips
+ *------------------------------------------*/
+ static bool itemdb_read_sharp(char* fields[], int columns, int current) {
+	unsigned short nameid = atoi(fields[0]);
+	unsigned int red,orange,yellow,green,blue,white;
+	struct item_data *id;
+
+	if (!(id = itemdb_exists(nameid))) {
+		ShowError("itemdb_read_sharp: Invalid item item with id %hu\n", nameid);
+		return true;
+	}
+	
+	red 	= atoi(fields[1]);
+	orange	= atoi(fields[2]);
+	yellow	= atoi(fields[3]);
+	green 	= atoi(fields[4]);
+	blue 	= atoi(fields[5]);
+	white 	= atoi(fields[6]);
+
+
+	id->sharpness.r = red;
+	id->sharpness.o = orange;
+	if(yellow > 0)
+		id->sharpness.y = yellow;
+	if(green > 0)
+		id->sharpness.g = green;
+	if(blue > 0)
+		id->sharpness.b = blue;
+	if(white > 0)
+		id->sharpness.w = white;
+
+	return true;
+}
+
 
 /** Read item forbidden by mapflag (can't equip item)
 * Structure: <nameid>,<mode>
@@ -1606,6 +1664,7 @@ static void itemdb_read(void) {
 		sv_readdb(dbsubpath2, "item_delay.txt",         ',', 2, 3, -1, &itemdb_read_itemdelay, i);
 		sv_readdb(dbsubpath2, "item_buyingstore.txt",   ',', 1, 1, -1, &itemdb_read_buyingstore, i);
 		sv_readdb(dbsubpath2, "item_flag.txt",          ',', 2, 2, -1, &itemdb_read_flag, i);
+		sv_readdb(dbsubpath2, "item_sharp.txt",         ',', 4, 7, -1, &itemdb_read_sharp, i); //Biali 
 		aFree(dbsubpath1);
 		aFree(dbsubpath2);
 	}

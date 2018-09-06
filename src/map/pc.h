@@ -239,6 +239,7 @@ struct map_session_data {
 		unsigned int hpmeter_visible : 1;
 		unsigned disable_atcommand_on_npc : 1; //Prevent to use atcommand while talking with NPC [Kichi]
 		uint8 isBoundTrading; // Player is currently add bound item to trade list [Cydh]
+		bool swapping; //Biali mf_equiplock
 	} state;
 	struct {
 		unsigned char no_weapon_damage, no_magic_damage, no_misc_damage;
@@ -791,6 +792,8 @@ struct {
 #define pc_isinvisible(sd)    ( (sd)->sc.option&OPTION_INVISIBLE )
 #define pc_is50overweight(sd) ( (sd)->weight*100 >= (sd)->max_weight*battle_config.natural_heal_weight_rate )
 #define pc_is90overweight(sd) ( (sd)->weight*10 >= (sd)->max_weight*9 )
+//Biali
+#define pc_check_sharpness(sd, index)       ( (sd)->status.inventory[sd->equip_index[(index)]].sharp )
 
 /// Enum of Player's Parameter
 enum e_params {
@@ -970,6 +973,12 @@ int pc_insert_card(struct map_session_data *sd,int idx_card,int idx_equip);
 
 int pc_steal_item(struct map_session_data *sd,struct block_list *bl, uint16 skill_lv);
 int pc_steal_coin(struct map_session_data *sd,struct block_list *bl);
+
+//Biali
+void pc_sharp_depletion(struct map_session_data *sd);
+void pc_sharp_depletion_sub(struct map_session_data *sd, short hand);
+void pc_sharp_changes(TBL_PC *sd, short index);
+void pc_sharpen_equip(TBL_PC *sd, short hand);
 
 int pc_modifybuyvalue(struct map_session_data*,int);
 int pc_modifysellvalue(struct map_session_data*,int);

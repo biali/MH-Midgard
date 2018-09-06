@@ -470,7 +470,8 @@ enum {
 	MF_NOMINEEFFECT,
 	MF_NOLOCKON,
 	MF_NOTOMB,
-	MF_SKILL_DAMAGE	//60
+	MF_SKILL_DAMAGE,	//60
+	MF_EQUIPLOCK = 80 //Biali
 };
 
 const char* script_op2name(int op)
@@ -6994,6 +6995,99 @@ BUILDIN_FUNC(grouprandomitem) {
 	return SCRIPT_CMD_SUCCESS;
 }
 
+ 
+/*==========================================
+ * Biali : getequipsharpness(<equipment slot>{,<char_id>})
+ *------------------------------------------*/
+BUILDIN_FUNC(getequipsharpness)
+{
+ 	int i, num;
+ 	TBL_PC* sd;
+ 	struct item* item;
+ 
+ 	if (!script_charid2sd(3, sd)) {
+ 		script_pushconststr(st, "");
+ 		return SCRIPT_CMD_FAILURE;
+ 	}
+ 
+ 	num = script_getnum(st,2);
+ 	if ( !equip_index_check(num) ) {
+ 		script_pushconststr(st, "");
+ 		return SCRIPT_CMD_FAILURE;
+ 	}
+ 
+ 	// get inventory position of item
+ 	i = pc_checkequip(sd,equip_bitmask[num]);
+ 	if (i < 0) {
+ 		script_pushconststr(st, "");
+ 		return SCRIPT_CMD_FAILURE;
+ 	}
+ 
+ 	item = &sd->status.inventory[i];
+ 	if (item != 0) {
+ 		int maxlen = 256;
+ 		char *buf = (char *)aMalloc(maxlen*sizeof(char));
+ 
+ 		memset(buf, 0, maxlen);
+ 		snprintf(buf, maxlen-1, "%llu", (unsigned short)item->sharp);
+ 
+ 		script_pushstr(st, buf);
+ 	} else
+ 		script_pushconststr(st, "");
+ 
+ 	return SCRIPT_CMD_SUCCESS;
+}
+ 
+/*==========================================
+ * Biali : sharpen equip(<equipment slot>)
+ *------------------------------------------*/
+BUILDIN_FUNC(sharpenequip)
+{
+//	TBL_PC* sd;
+ 	short pos = -1;
+ 	struct map_session_data * sd = script_rid2sd(st);
+ 
+ 	if(!sd)
+ 		return SCRIPT_CMD_SUCCESS;
+ 
+ 	if(sd->status.weapon == W_FIST)
+ 		return SCRIPT_CMD_SUCCESS;
+ 
+ 	switch (sd->status.weapon) {
+ 		case W_DOUBLE_DD:
+ 		case W_DOUBLE_DS:
+ 		case W_DOUBLE_DA:
+ 		case W_DOUBLE_SS:
+ 		case W_DOUBLE_SA:
+ 		case W_DOUBLE_AA:
+ 			pc_sharpen_equip(sd, EQP_HAND_L);
+ 		case W_DAGGER:
+ 		case W_1HSWORD:
+ 		case W_1HSPEAR:
+ 		case W_1HAXE:
+ 			pos = pc_checkequip(sd,EQP_HAND_R);
+ 			if(pos >= 0) {
+ 				pc_sharpen_equip(sd, EQP_HAND_R);
+ 			} else {
+ 				pos = pc_checkequip(sd,EQP_HAND_L);
+ 				pc_sharpen_equip(sd, EQP_HAND_L);
+ 			}
+ 			break;
+ 		case W_2HSWORD:
+ 		case W_2HSPEAR:
+ 		case W_2HAXE:
+ 		case W_KNUCKLE:
+ 		case W_KATAR:
+ 			pc_sharpen_equip(sd, EQP_ARMS);
+ 			break;
+ 
+ 		default:
+ 			return SCRIPT_CMD_SUCCESS; //equips with no sharpness
+ 	}
+ 
+ 	return SCRIPT_CMD_SUCCESS;
+} 
+
 /**
 * makeitem <item id>,<amount>,"<map name>",<X>,<Y>;
 * makeitem "<item name>",<amount>,"<map name>",<X>,<Y>;
@@ -11564,6 +11658,7 @@ BUILDIN_FUNC(getmapflag)
 			case MF_NOMINEEFFECT:		script_pushint(st,map[m].flag.nomineeffect); break;
 			case MF_NOLOCKON:			script_pushint(st,map[m].flag.nolockon); break;
 			case MF_NOTOMB:				script_pushint(st,map[m].flag.notomb); break;
+			case MF_EQUIPLOCK:			script_pushint(st,map[m].flag.equiplock); break;	//mf_equiplock BIALI
 #ifdef ADJUST_SKILL_DAMAGE
 			case MF_SKILL_DAMAGE:
 				{
@@ -11687,6 +11782,7 @@ BUILDIN_FUNC(setmapflag)
 			case MF_NOMINEEFFECT:		map[m].flag.nomineeffect = 1 ; break;
 			case MF_NOLOCKON:			map[m].flag.nolockon = 1 ; break;
 			case MF_NOTOMB:				map[m].flag.notomb = 1; break;
+			case MF_EQUIPLOCK:			map[m].flag.equiplock = 1; break;	//mf_equiplock BIALI
 #ifdef ADJUST_SKILL_DAMAGE
 			case MF_SKILL_DAMAGE:
 				{
@@ -11798,6 +11894,7 @@ BUILDIN_FUNC(removemapflag)
 			case MF_NOMINEEFFECT:		map[m].flag.nomineeffect = 0 ; break;
 			case MF_NOLOCKON:			map[m].flag.nolockon = 0 ; break;
 			case MF_NOTOMB:				map[m].flag.notomb = 0; break;
+			case MF_EQUIPLOCK:			map[m].flag.equiplock=0; break;	//mf_equiplock BIALI
 #ifdef ADJUST_SKILL_DAMAGE
 			case MF_SKILL_DAMAGE:
 				{
@@ -20397,6 +20494,137 @@ BUILDIN_FUNC(preg_match) {
 #endif
 }
 
+/** 
+* Biali
+* getskillname (skillid);
+**/
+BUILDIN_FUNC(getskillname)
+{
+ 	int skill_id;
+ 	char *skill_name;
+ 	//get input skill_id
+ 	if (!script_hasdata(st, 2)){
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 	skill_id = script_getnum(st, 2);
+ 
+ 	if (!skill_get_index(skill_id)){
+ 		ShowError("script:conv_str: Unknown skill_id supplied.\"\n");
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 	skill_name = (char *)aMalloc(SKILL_NAME_LENGTH*sizeof(char));
+ 	memcpy(skill_name, skill_db[skill_get_index(skill_id)]->desc, SKILL_DESC_LENGTH);
+ 	script_pushstr(st, skill_name);
+ 
+ 	return SCRIPT_CMD_SUCCESS;
+}
+ 
+/** 
+* Biali
+* getskillmaxlv (skillid);
+**/
+BUILDIN_FUNC(getskillmaxlv)
+{
+ 	int skill_id;
+ 	unsigned short *skill_max_lv;
+ 	//get input skill_id
+ 	if (!script_hasdata(st, 2)){
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 	skill_id = script_getnum(st, 2);
+ 
+ 	if (!skill_get_index(skill_id)){
+ 		ShowError("script:conv_str: Unknown skill_id supplied.\"\n");
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 	skill_max_lv = skill_get_max(skill_id);
+ 	script_pushint(st,skill_max_lv);
+ 
+ 	return SCRIPT_CMD_SUCCESS;
+}
+ 
+ 
+/** 
+* Biali
+* getquestname (questid);
+**/
+BUILDIN_FUNC(getquestname)
+{
+ 
+ 	if (!script_hasdata(st, 2)){
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 
+ 	int quest_id = script_getnum(st, 2);
+ 	char *quest_name;
+ 
+ 	if(quest_id == 0) {
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 
+ 	struct quest_db *qi = quest_search(quest_id);
+ 	if (!script_hasdata(st, 2)){
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 
+ 	if (!quest_search(quest_id)) {
+ 		ShowError("script:conv_str: Unknown quest_id supplied.\"\n");
+ 		script_pushconststr(st, "null");
+ 		return SCRIPT_CMD_SUCCESS;
+ 	} else {
+ 		qi = quest_search(quest_id);
+ 		quest_name = (char *)aMalloc(SKILL_NAME_LENGTH*sizeof(char));
+ 		memcpy(quest_name, qi->name, SKILL_DESC_LENGTH);
+ 		script_pushstr(st, quest_name);
+ 	}
+ 
+ 
+ 	return SCRIPT_CMD_SUCCESS;
+}
+ 
+ 
+ 
+/*=========================================
+ * Check values of resistance to elements from a given charid
+ * [ Biali ]
+ *-----------------------------------------*/
+BUILDIN_FUNC(checkresist) {
+ 
+ 	TBL_PC* sd=script_rid2sd(st);
+ 
+ //	if( script_hasdata(st,2) )
+ //		TBL_PC* sd=map_nick2sd(script_getstr(st,2));
+ //	else
+ //		TBL_PC* sd=script_rid2sd(st);
+ 
+ 	if(sd==NULL) {
+ 		script_pushint(st,0); //return 0, according docs
+ 		return SCRIPT_CMD_SUCCESS;
+ 	}
+ 
+
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 0), sd->subele[ELE_NEUTRAL] + sd->subele_script[ELE_NEUTRAL]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 1), sd->subele[ELE_WATER] + sd->subele_script[ELE_WATER]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 2), sd->subele[ELE_EARTH] + sd->subele_script[ELE_EARTH]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 3), sd->subele[ELE_FIRE] + sd->subele_script[ELE_FIRE]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 4), sd->subele[ELE_WIND] + sd->subele_script[ELE_WIND]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 5), sd->subele[ELE_POISON] + sd->subele_script[ELE_POISON]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 6), sd->subele[ELE_HOLY] + sd->subele_script[ELE_HOLY]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 7), sd->subele[ELE_DARK] + sd->subele_script[ELE_DARK]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 8), sd->subele[ELE_GHOST] + sd->subele_script[ELE_GHOST]);
+ 	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 9), sd->subele[ELE_UNDEAD] + sd->subele_script[ELE_UNDEAD]);
+ //	mapreg_setreg(reference_uid(add_str("$@elementalresistance"), 10), sd->subele[ELE_ALL] + sd->subele_script[ELE_ALL]);
+ //	script_pushint(st, 11);
+ 	return SCRIPT_CMD_SUCCESS;
+}
+ 
+
 /// script command definitions
 /// for an explanation on args, see add_buildin_func
 struct script_function buildin_func[] = {
@@ -20474,6 +20702,12 @@ struct script_function buildin_func[] = {
 	BUILDIN_DEF(strnpcinfo,"i"),
 	BUILDIN_DEF(getequipid,"i?"),
 	BUILDIN_DEF(getequipuniqueid,"i?"),
+	BUILDIN_DEF(getequipsharpness,"i?"), //Biali
+ 	BUILDIN_DEF(sharpenequip,""), //Biali
+ 	BUILDIN_DEF(getskillname,"v"), 	//Biali
+ 	BUILDIN_DEF(getskillmaxlv,"v"), //Biali
+ 	BUILDIN_DEF(getquestname,"i"), 	//Biali
+ 	BUILDIN_DEF(checkresist,""), 	//Biali
 	BUILDIN_DEF(getequipname,"i?"),
 	BUILDIN_DEF(getbrokenid,"i?"), // [Valaris]
 	BUILDIN_DEF(repair,"i?"), // [Valaris]

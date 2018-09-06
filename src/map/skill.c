@@ -6023,6 +6023,48 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, ui
 				pet_catch_process1(sd, dstmd->mob_id);
 		}
 		break;
+	//Biali
+ 	case RM_CAPTURE_NET:
+ 		clif_skill_nodamage(src,bl,skill_id,skill_lv,1);
+ 		if (sd && dstmd) {
+ 			ARR_FIND( 0, MAX_PET_DB, i, dstmd->mob_id == pet_db[i].class_ );
+ 			if( i < MAX_PET_DB ) {
+ 				pet_capture_net(sd, dstmd);
+ 			}
+ 		}
+ 		break;
+ 	case RM_WHETSTONE:
+ 		clif_skill_nodamage(src,bl,skill_id,skill_lv,1);
+ 		if (sd) {
+ 			short pos = -1;
+ 			switch (sd->status.weapon) {
+ 				case W_DOUBLE_DD:
+ 				case W_DOUBLE_DS:
+ 				case W_DOUBLE_DA:
+ 				case W_DOUBLE_SS:
+ 				case W_DOUBLE_SA:
+ 				case W_DOUBLE_AA:
+ 					pc_sharpen_equip(sd, EQP_HAND_L);
+ 				case W_DAGGER:
+ 				case W_1HSWORD:
+ 				case W_1HSPEAR:
+ 				case W_1HAXE:
+ 					pos = pc_checkequip(sd,EQP_HAND_R);
+ 					if(pos >= 0) {
+ 						pc_sharpen_equip(sd, EQP_HAND_R);
+ 					} else {
+ 						pos = pc_checkequip(sd,EQP_HAND_L);
+ 						pc_sharpen_equip(sd, EQP_HAND_L);
+ 					}
+ 					break;
+ 				case W_2HSWORD:
+ 				case W_2HSPEAR:
+ 				case W_2HAXE:
+ 				case W_KNUCKLE:
+ 				case W_KATAR:
+ 					pc_sharpen_equip(sd, EQP_ARMS);
+ 					break;
+ 			}
 
 	case CR_PROVIDENCE:
 		if(sd && dstsd){ //Check they are not another crusader [Skotlex]
@@ -6900,8 +6942,8 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, ui
 		break;
 
 	case NV_FIRSTAID:
-		clif_skill_nodamage(src,bl,skill_id,5,1);
-		status_heal(bl,5,0,0);
+		clif_skill_nodamage(src,bl,skill_id,100,1); //Biali to heal 100 instead of 5
+ 		status_heal(bl,100,0,0); //Biali to heal 100 instead of 5
 		break;
 
 	case AL_CURE:

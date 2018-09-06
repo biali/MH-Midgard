@@ -690,6 +690,7 @@ struct map_data {
 		unsigned partylock :1;
 		unsigned guildlock :1;
 		unsigned reset :1; // [Daegaladh]
+		unsigned equiplock : 1;	//mf_equiplock Biali
 		unsigned chmautojoin : 1; //prevent to auto join map channel
 		unsigned nousecart : 1;	//prevent open up cart @FIXME client side only atm
 		unsigned noitemconsumption : 1; //prevent item usage

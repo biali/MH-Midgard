@@ -1563,14 +1563,15 @@ void pc_calc_skilltree(struct map_session_data *sd)
 				sd->status.skill[i].flag = SKILL_FLAG_PERMANENT;
 				continue;
 			}
-			switch (sk_id) {
-				case NV_TRICKDEAD:
-					if( (sd->class_&MAPID_UPPERMASK) != MAPID_NOVICE ) {
-						sd->status.skill[i].id = 0;
-						sd->status.skill[i].lv = 0;
-						sd->status.skill[i].flag = SKILL_FLAG_PERMANENT;
-					}
-					break;
+			//Biali - Play dead available to all classes
+			//switch (sk_id) {
+			//	case NV_TRICKDEAD:
+			//		if( (sd->class_&MAPID_UPPERMASK) != MAPID_NOVICE ) {
+			//			sd->status.skill[i].id = 0;
+			//			sd->status.skill[i].lv = 0;
+			//			sd->status.skill[i].flag = SKILL_FLAG_PERMANENT;
+			//		}
+			//		break;
 			}
 		}
 	}
@@ -4295,6 +4296,7 @@ char pc_additem(struct map_session_data *sd,struct item *item,int amount,e_log_p
 	struct item_data *id;
 	int16 i;
 	unsigned int w;
+	int sh = 0; //Biali
 
 	nullpo_retr(1, sd);
 	nullpo_retr(1, item);
@@ -4355,9 +4357,49 @@ char pc_additem(struct map_session_data *sd,struct item *item,int amount,e_log_p
 		sd->inventory_data[i] = id;
 		sd->last_addeditem_index = i;
 
-		if (!itemdb_isstackable2(id) || id->flag.guid)
+		if (!itemdb_isstackable2(id) || id->flag.guid) {
 			sd->status.inventory[i].unique_id = item->unique_id ? item->unique_id : pc_generate_unique_id(sd);
+		
+			//BIALI
+			if(itemdb_isweapon(sd, i)) {
+				switch (sd->inventory_data[i]->look) {
+					case W_DAGGER:
+					case W_1HSWORD:
+					case W_2HSWORD:
+					case W_1HSPEAR:
+					case W_2HSPEAR:
+					case W_1HAXE:
+					case W_2HAXE:
+					case W_KNUCKLE:
+					case W_KATAR:
+						if (id->sharpness.w > 0)
+							sh = id->sharpness.w;
+						else if (id->sharpness.b > 0)
+							sh = id->sharpness.b;
+						else if (id->sharpness.g > 0)
+							sh = id->sharpness.g;
+						else if (id->sharpness.y > 0)
+							sh = id->sharpness.y;
+						else if (id->sharpness.o > 0)
+							sh = id->sharpness.o;
+						else 
+							sh = id->sharpness.r;
 
+						if(sh == 0) {
+							sh = 50; //Dummy value for equips not listed in item_sharp.txt
+							ShowError("Item %d is not listed in item_sharp.db. Using Dummy value of %d.\n",sd->inventory_data[i]->nameid,sh);
+						}
+						sd->status.inventory[i].sharp = sh;
+						char output[100];
+						sprintf(output,"Sharpness of %s is %d.",id->jname, sh);
+						clif_displaymessage(sd->fd, output);
+						break;
+					default:
+						break;
+				}
+			}
+			id->flag.autoequip = 1;
+		} //Biali
 		clif_additem(sd,i,amount,0);
 	}
 
@@ -4366,8 +4408,12 @@ char pc_additem(struct map_session_data *sd,struct item *item,int amount,e_log_p
 	sd->weight += w;
 	clif_updatestatus(sd,SP_WEIGHT);
 	//Auto-equip
-	if(id->flag.autoequip)
-		pc_equipitem(sd, i, id->equip);
+ 	if(id->flag.autoequip) {
+ 		sd->state.swapping = true; //Biali
+  		pc_equipitem(sd, i, id->equip);
+ 		id->flag.autoequip = 0; //Biali to avoid players from unequiping it (mf_equiplock)
+ 		sd->state.swapping = false; //Biali
+ 	}
 
 	/* rental item check */
 	if( item->expire_time ) {
@@ -4380,6 +4426,12 @@ char pc_additem(struct map_session_data *sd,struct item *item,int amount,e_log_p
 			pc_inventory_rental_add(sd, seconds);
 		}
 	}
+
+ 	//Biali - Etc items go straight to storage
+ 	if(id->type == 3) {
+ 		storage_storageadd(sd, i, sd->status.inventory[i].amount);
+ 		storage_storageclose(sd);
+ 	}
 
 	return ADDITEM_SUCCESS;
 }
@@ -5114,6 +5166,122 @@ int pc_steal_item(struct map_session_data *sd,struct block_list *bl, uint16 skil
 		intif_broadcast(message, strlen(message) + 1, BC_DEFAULT);
 	}
 	return 1;
+}
+
+//Equipment Sharpness Depletion
+//Biali
+void pc_sharp_depletion(struct map_session_data *sd)
+{
+	if(sd) {
+		switch (sd->status.weapon) {
+			case W_DOUBLE_DD:
+			case W_DOUBLE_DS:
+			case W_DOUBLE_DA:
+			case W_DOUBLE_SS:
+			case W_DOUBLE_SA:
+			case W_DOUBLE_AA:
+				pc_sharp_depletion_sub(sd,EQP_HAND_L);
+			case W_DAGGER:
+			case W_1HSWORD:
+			case W_1HSPEAR:
+			case W_1HAXE:
+				if(sd->weapontype1)
+					pc_sharp_depletion_sub(sd,EQP_HAND_R);
+				else if(sd->weapontype2)
+					pc_sharp_depletion_sub(sd,EQP_HAND_L);
+				break;	
+			case W_2HSWORD:
+			case W_2HSPEAR:
+			case W_2HAXE:
+			case W_KNUCKLE:
+			case W_KATAR:
+				pc_sharp_depletion_sub(sd,EQP_ARMS);
+				break;
+			default:
+				return;
+ 		}
+	}
+ 
+	return;
+}
+ 
+void pc_sharp_depletion_sub(struct map_session_data *sd, short hand)
+{
+ 	int pos; 
+ 	pos = pc_checkequip(sd,hand);
+ 	if(sd->status.inventory[pos].sharp > 0) {
+ 		sd->status.inventory[pos].sharp--;
+ 		pc_sharp_changes(sd, pos);
+ 	}
+ 	return;
+}
+ 
+//Equipment Sharpness Changes
+//Biali
+void pc_sharp_changes(TBL_PC *sd, short index)
+{
+ 	int sharp = sd->status.inventory[index].sharp;
+ 
+ 	char output[100];
+ 	int color = 0;
+ 	if(!sharp)
+ 		return;
+ 
+ 	if(sd) {
+ 		if(sharp > 0) {
+ 			if(sd->inventory_data[index]->sharpness.w == sharp)
+ 				color = 0xFFFFFF; //White
+ 			else if(sd->inventory_data[index]->sharpness.b == sharp)
+ 				color = 0x2C86D9; //Blue
+ 			else if(sd->inventory_data[index]->sharpness.g == sharp)
+ 				color = 0x70D92C; //Green
+ 			else if(sd->inventory_data[index]->sharpness.y == sharp)
+ 				color = 0xD9D12C; //Yellow
+ 			else if(sd->inventory_data[index]->sharpness.o == sharp)
+ 				color = 0xD9662C; //Orange
+ 			else if(sd->inventory_data[index]->sharpness.r == sharp)
+ 				color = 0xD92C2C; //Red
+ 		}
+ 
+ 		if(color > 0) {
+ 			sprintf(output,"Sharpness adjusted [ %s ]",itemdb_jname(sd->inventory_data[index]->nameid));
+ 			clif_messagecolor2(sd, color, output);
+ 		}
+ 	}
+ 
+ 	return;
+}
+  
+ 
+//Equipment sharpen
+//Biali
+void pc_sharpen_equip(TBL_PC *sd, short hand)
+{
+ 	int sh = 0;
+ 	int index = pc_checkequip(sd,hand);
+ 	
+ 	if (index < 0)
+ 		return;
+ 
+ 	if (sd->inventory_data[index]->sharpness.w > 0)
+ 		sh = sd->inventory_data[index]->sharpness.w;
+ 	else if (sd->inventory_data[index]->sharpness.b > 0)
+ 		sh = sd->inventory_data[index]->sharpness.b;
+ 	else if (sd->inventory_data[index]->sharpness.g > 0)
+ 		sh = sd->inventory_data[index]->sharpness.g;
+ 	else if (sd->inventory_data[index]->sharpness.y > 0)
+ 		sh = sd->inventory_data[index]->sharpness.y;
+ 	else if (sd->inventory_data[index]->sharpness.o > 0)
+ 		sh = sd->inventory_data[index]->sharpness.o;
+ 	else 
+ 		sh = sd->inventory_data[index]->sharpness.r;
+ 
+ 
+ 	sd->status.inventory[index].sharp = sh;
+ 
+ 	pc_sharp_changes(sd, index);
+ 
+ 	return;
 }
 
 /*==========================================
@@ -9280,6 +9448,13 @@ bool pc_equipitem(struct map_session_data *sd,short n,int req_pos)
 		clif_notify_bindOnEquip(sd,n);
 	}
 
+	//Biali
+ 	if( map[sd->bl.m].flag.equiplock && !sd->state.swapping)	//mf_equiplock
+ 	{
+ 		clif_displaymessage (sd->fd, "Use a storage to swap equipments.");
+ 		return 0;
+ 	}
+
 	if(pos == EQP_ACC) { //Accesories should only go in one of the two,
 		pos = req_pos&EQP_ACC;
 		if (pos == EQP_ACC) //User specified both slots..
@@ -9491,6 +9666,14 @@ bool pc_unequipitem(struct map_session_data *sd,int n,int flag) {
 			status_change_end(&sd->bl,SC_P_ALTER,INVALID_TIMER);
 	}
 
+	//Biali
+ 	if( map[sd->bl.m].flag.equiplock && !sd->state.swapping)	//mf_equiplock
+ 	{
+ 		clif_displaymessage (sd->fd, "Use a storage to swap equipments.");
+ 		//clif_unequipitemack(sd,n,0,0);
+ 		return false;
+ 	} 
+
 	if(battle_config.battle_log)
 		ShowInfo("unequip %d %x:%x\n",n,pc_equippoint(sd,n),sd->status.inventory[n].equip);
 
@@ -9626,6 +9809,11 @@ bool pc_unequipitem(struct map_session_data *sd,int n,int flag) {
 		}
 	}
 	sd->npc_item_flag = iflag;
+
+ 	//Biali
+ 	storage_storageadd(sd, n, sd->status.inventory[n].amount);
+ 	storage_storageclose(sd);
+ 	sd->state.swapping = false; 
 
 	return true;
 }

@@ -184,6 +184,14 @@ static int storage_additem(struct map_session_data* sd, struct item* item_data, 
 		return 1;
 	}
 
+ 	//Biali - Rework Bound_to
+ 	//if( (item_data->bound > BOUND_ACCOUNT) && !pc_can_give_bounded_items(sd) ) {
+	//	clif_displaymessage(sd->fd, msg_txt(sd,294));
+ 	//	return 1;
+ 	//}
+ 	if(item_data->bound && item_data->bound_to == NULL)
+ 		item_data->bound_to = sd->status.char_id;
+
 	if( itemdb_isstackable2(data) ) { // Stackable
 		for( i = 0; i < sd->storage_size; i++ ) {
 			if( compare_item(&stor->items[i], item_data) ) { // existing items found, stack them

@@ -685,6 +685,37 @@ int pet_catch_process2(struct map_session_data* sd, int target_id)
 	return 0;
 }
 
+
+/**
+ * Captura monstros com a skill Capture Net
+ * Biali
+ */
+int pet_capture_net(struct map_session_data *sd,struct mob_data *md)
+{
+ 
+ 	nullpo_ret(sd);
+ 	nullpo_ret(md);
+ 
+ 	int i = 0;
+ 
+ 	if(!md || md->bl.type != BL_MOB || md->bl.prev == NULL || md->option.is_event) { // Invalid inputs/state, abort capture.
+ 		clif_pet_roulette(sd,0);
+ 		sd->catch_target_class = -1;
+ 		sd->itemid = sd->itemindex = -1;
+ 		//ShowWarning("ABORTOU. %d, %d, %d ",md->bl.type, md->bl.prev, md->option.is_event );
+ 		return 1;
+ 	}
+ 	sd->catch_target_class = md->mob_id;
+ 	i = search_petDB_index(md->mob_id,PET_CLASS);
+ 	unit_remove_map(&md->bl,CLR_OUTSIGHT);
+ 	status_kill(&md->bl);
+ 	intif_create_pet(sd->status.account_id,sd->status.char_id,pet_db[i].class_,mob_db(pet_db[i].class_)->lv,
+ 			pet_db[i].EggID,0,pet_db[i].intimate,100,0,1,pet_db[i].jname);
+ 
+ 	return 1; 
+}
+
+
 /**
  * Is invoked _only_ when a new pet has been created is a product of packet 0x3880
  * see mapif_pet_created@int_pet.c for more information.

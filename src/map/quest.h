@@ -13,6 +13,7 @@ struct quest_db {
 	uint16 count[MAX_QUEST_OBJECTIVES];
 	uint8 num_objectives;
 	//StringBuf name;
+	char name[SKILL_NAME_LENGTH];
 };
 
 struct quest_db quest_dummy;	///< Dummy entry for invalid quest lookups

@@ -125,6 +125,8 @@ enum item_itemid
 	ITEMID_WOB_LOCAL					= 14585,
 	ITEMID_SIEGE_TELEPORT_SCROLL		= 14591,
 	ITEMID_JOB_MANUAL50					= 14592,
+	ITEMID_POISONBOTTLE 				= 678,
+ 	ITEMID_ARROW 						= 1750,
 };
 
 ///Mercenary Scrolls
@@ -435,6 +437,16 @@ struct item_data
 		unsigned guid : 1; // This item always be attached with GUID and make it as bound item! [Cydh]
 		bool bindOnEquip; ///< Set item as bound when equipped
 	} flag;
+ 	//Biali
+ 	struct {
+ 		int r;
+ 		int o;
+ 		int y;
+ 		int g;
+ 		int b;
+ 		int w;
+ 	} sharpness;	
+ 	unsigned int bound_to; //Biali
 	struct {// item stacking limitation
 		unsigned short amount;
 		unsigned int inventory:1;
@@ -482,6 +494,15 @@ struct item_data* itemdb_exists(unsigned short nameid);
 #define itemdb_iscashfood(id) ( (id) >= ITEMID_STR_DISH10_ && (id) <= ITEMID_VIT_DISH10_ )
 #define itemdb_is_GNbomb(n) (n >= ITEMID_APPLE_BOMB && n <= ITEMID_VERY_HARD_LUMP)
 #define itemdb_is_GNthrowable(n) (n >= ITEMID_MYSTERIOUS_POWDER && n <= ITEMID_BLACK_THING_TO_THROW)
+#define itemdb_nameidbypos(sd,n) ((sd)->status.inventory[sd->equip_index[(n)]].nameid) //Biali
+ 
+#define itemdb_sharp_w(n) itemdb_search(n)->sharp_w
+#define itemdb_sharp_b(n) itemdb_search(n)->sharp_b
+#define itemdb_sharp_g(n) itemdb_search(n)->sharp_g
+#define itemdb_sharp_y(n) itemdb_search(n)->sharp_y
+#define itemdb_sharp_o(n) itemdb_search(n)->sharp_o
+#define itemdb_sharp_r(n) itemdb_search(n)->sharp_r
+
 const char* itemdb_typename(enum item_types type);
 const char *itemdb_typename_ammo (enum e_item_ammo ammo);
 bool itemdb_is_spellbook2(unsigned short nameid);
@@ -514,6 +535,7 @@ bool itemdb_isrestricted(struct item* item, int gmlv, int gmlv2, bool (*func)(st
 #define itemdb_canauction(item, gmlv) itemdb_isrestricted(item , gmlv, 0, itemdb_canauction_sub)
 
 bool itemdb_isequip2(struct item_data *id);
+bool itemdb_isweapon(struct map_session_data *sd, int n); //Biali
 #define itemdb_isequip(nameid) itemdb_isequip2(itemdb_search(nameid))
 char itemdb_isidentified(unsigned short nameid);
 bool itemdb_isstackable2(struct item_data *id);

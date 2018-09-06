@@ -1705,6 +1705,9 @@ enum e_skill {
 	ECL_SADAGUI,
 	ECL_SEQUOIADUST,
 	ECLAGE_RECALL,
+	//Biali Custom Skills Ragnamania
+ 	RM_CAPTURE_NET = 4001,
+ 	RM_WHETSTONE = 4002,
 
 	GC_DARKCROW = 5001,
 	RA_UNLIMIT,
