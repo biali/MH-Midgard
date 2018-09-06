@@ -698,11 +698,10 @@ int pet_capture_net(struct map_session_data *sd,struct mob_data *md)
  
  	int i = 0;
  
- 	if(!md || md->bl.type != BL_MOB || md->bl.prev == NULL || md->option.is_event) { // Invalid inputs/state, abort capture.
+ 	if(!md || md->bl.type != BL_MOB || md->bl.prev == NULL) { // Invalid inputs/state, abort capture.
  		clif_pet_roulette(sd,0);
  		sd->catch_target_class = -1;
  		sd->itemid = sd->itemindex = -1;
- 		//ShowWarning("ABORTOU. %d, %d, %d ",md->bl.type, md->bl.prev, md->option.is_event );
  		return 1;
  	}
  	sd->catch_target_class = md->mob_id;

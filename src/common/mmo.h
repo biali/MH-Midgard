@@ -185,6 +185,8 @@ struct item {
 	unsigned int expire_time;
 	char favorite, bound;
 	uint64 unique_id;
+	unsigned short sharp;
+	unsigned int bound_to; //Biali
 };
 
 //Equip position constants

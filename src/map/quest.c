@@ -425,7 +425,7 @@ int quest_read_db(void)
 			}
 
 			//Biali
-			quest = (struct quest_db *)idb_get(questdb, quest_id);
+			quest = (struct quest_db *)idb_get(questdb, entry.id);
 			safestrncpy(quest->name, trim(str[17]), sizeof(quest->name));
 	 		//	ShowWarning("str17 %s and quest_name %s.\n",str[17],quest->name);
 

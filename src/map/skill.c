@@ -6065,7 +6065,7 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, ui
  					pc_sharpen_equip(sd, EQP_ARMS);
  					break;
  			}
-
+ 		}
 	case CR_PROVIDENCE:
 		if(sd && dstsd){ //Check they are not another crusader [Skotlex]
 			if ((dstsd->class_&MAPID_UPPERMASK) == MAPID_CRUSADER) {

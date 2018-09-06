@@ -68,6 +68,10 @@ enum equip_index {
 	EQI_MAX
 };
 
+extern unsigned int equip_bitmask[EQI_MAX];
+
+#define equip_index_check(i) ( (i) >= EQI_ACC_L && (i) < EQI_MAX )
+
 struct weapon_data {
 	int atkmods[3];
 	// all the variables except atkmods get zero'ed in each call of status_calc_pc
@@ -328,6 +332,7 @@ struct map_session_data {
 	// here start arrays to be globally zeroed at the beginning of status_calc_pc()
 	int param_bonus[6],param_equip[6]; //Stores card/equipment bonuses.
 	int subele[ELE_MAX];
+	int subele_script[ELE_MAX];
 	int subdefele[ELE_MAX];
 	int subrace[RC_MAX];
 	int subclass[CLASS_MAX];
